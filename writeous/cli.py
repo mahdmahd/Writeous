@@ -1,6 +1,7 @@
 import click
 import time
 import os
+import re
 import csv
 from datetime import datetime
 from docx import Document
@@ -8,11 +9,8 @@ from docx import Document
 
 def get_docx_metrics(filepath):
     """
-    Parses a .docx file to return:
-    1. Total word count
-    2. Total number of sections (Heading styles)
-    3. The name of the section currently being expanded (most words added)
-    4. A dictionary of word counts per section
+    Parses a .docx file to return total word count, including revision-tracked
+    additions and deletions.
     """
     try:
         doc = Document(filepath)
@@ -21,18 +19,34 @@ def get_docx_metrics(filepath):
         total_words = 0
 
         for p in doc.paragraphs:
-            # Check for Heading styles
+            # 1. Update Section Context
             if p.style.name.startswith('Heading'):
                 current_section = p.text.strip() if p.text.strip() else "Untitled Section"
-                #if current_section not in sections:
-                sections[current_section] = 0
-            else:
-                words = len(p.text.split())
-                sections[current_section] = sections.get(current_section, 0) + words
-                total_words += words
+                if current_section not in sections:
+                    sections[current_section] = 0
+                continue
+
+            # 2. Extract ALL text nodes from the XML (Normal, Inserted, and Deleted)
+            # w:t = normal text
+            # w:ins//w:t = tracked additions
+            # w:delText = tracked deletions
+
+            # Using xpath to find all possible text sources within the paragraph
+            all_text_nodes = p._element.xpath('.//w:t | .//w:delText')
+            paragraph_content = " ".join([node.text for node in all_text_nodes if node.text])
+
+            # NEW: Only count clusters that contain at least one letter or number
+            # This ignores punctuation-only nodes and empty XML artifacts
+            words_list = re.findall(r'\w+', paragraph_content)
+            words = len(words_list)
+
+
+            sections[current_section] = sections.get(current_section, 0) + words
+            total_words += words
 
         return total_words, sections
-    except Exception:
+    except Exception as e:
+        # For debugging: print(f"Error: {e}")
         return None, None
 
 
