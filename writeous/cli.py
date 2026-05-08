@@ -75,11 +75,11 @@ def monitor(doc_path, output_folder, interval, goal):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    log_file = os.path.join(output_folder, "writing_stats.csv")
+    log_file_quant = os.path.join(output_folder, "writing_stats_quantitative.csv")
 
     # New CSV Header: added section_count and active_section
-    if not os.path.exists(log_file):
-        with open(log_file, 'w', newline='') as f:
+    if not os.path.exists(log_file_quant):
+        with open(log_file_quant, 'w', newline='') as f:
             f.write("timestamp,word_count,delta,section_count,active_section\n")
 
     last_count, last_sections = get_docx_metrics(doc_path)
@@ -103,7 +103,7 @@ def monitor(doc_path, output_folder, interval, goal):
                         active_section = sec
 
                 # Log to CSV
-                with open(log_file, 'a', newline='') as f:
+                with open(log_file_quant, 'a', newline='') as f:
                     writer = csv.writer(f)
                     writer.writerow([timestamp, current_count, delta, section_count, active_section])
 
@@ -127,7 +127,26 @@ def monitor(doc_path, output_folder, interval, goal):
             time.sleep(interval)
 
     except KeyboardInterrupt:
-        click.echo(click.style("\n🌙 Session ended.", fg='red'))
+        # Qualitative assessment
+        log_file_qual = os.path.join(output_folder, "writing_stats_qualitative.csv")
+
+        # New CSV header
+        if not os.path.exists(log_file_qual):
+            with open(log_file_qual, 'w', newline='') as f:
+                f.write("timestamp,writing_score,went_well,improvements\n")
+
+        # New row
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        writing_score = input('How would you rate your writing day today (0-10)? ')
+        went_well = input('What went well? ')
+        improvements = input('What would you like to improve? ')
+
+        # Log
+        with open(log_file_qual, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([timestamp, writing_score, went_well, improvements])
+
+        click.echo(click.style("\n🌙 Session ended. You showed up for writing ❤️", fg='red'))
 
 
 @main.command("report")
