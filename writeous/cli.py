@@ -3,6 +3,7 @@ import time
 import os
 import re
 import csv
+import requests
 from datetime import datetime
 from docx import Document
 
@@ -91,7 +92,9 @@ def main() -> None:
 @click.argument('output_folder', type=click.Path())
 @click.option('--interval', default=60, help='Check interval in seconds.')
 @click.option('--goal', default=0, help='Target word count for the session.')
-def monitor(doc_path, output_folder, interval, goal):
+@click.option('--colab', is_flag=True)
+@click.option('--name', default="Writer", help="Your name in the Universe")
+def monitor(doc_path, output_folder, interval, goal, colab, name):
     """Monitor Docx progress, section growth, and log to CSV."""
     click.clear()
     filename = os.path.basename(doc_path)
@@ -120,6 +123,17 @@ def monitor(doc_path, output_folder, interval, goal):
 
             if current_count is not None:
                 delta = current_count - last_count
+
+                # HEARTBEAT LOGIC
+                if colab and delta != 0:
+                    # We send a '1' if there is ANY change (add or delete)
+                    try:
+                        requests.post("http://127.0.0.1:5000/heartbeat",
+                                      json={"pulse": 1, "writer": name})
+                        click.echo(click.style("   ✨ Heartbeat sent to Universe", fg='magenta'))
+                    except:
+                        pass  # Silently fail if offline
+
                 section_count = len(current_sections)
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

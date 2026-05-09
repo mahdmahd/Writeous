@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Writing Universe</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+
+        /* Box made bigger: 800x600 for a more spacious workspace */
+        #universe {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 3px solid #444;
+            background: #000;
+            box-shadow: inset 0 0 50px #111;
+            border-radius: 10px;
+        }
+
+        /* Cats made bigger: 80px */
+        .cat {
+            position: absolute;
+            font-size: 80px;
+            text-align: center;
+            transition: all 0.5s;
+            user-select: none;
+        }
+
+        .active {
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0) scale(1); }
+            to { transform: translateY(-20px) scale(1.05); }
+        }
+
+        .writer-name {
+            font-size: 14px;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 8px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: -10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WRITING UNIVERSE</h1>
+    <div id="universe">
+        </div>
+    <p id="status">The universe is quiet...</p>
+
+    <script>
+        // Helper to generate a random neon color
+        function getRandomNeon() {
+            const colors = ['#00ff00', '#00ffff', '#ff00ff', '#ffff00', '#ff4500', '#7fff00', '#00ced1'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/get-pulses');
+                const data = await response.json();
+
+                const universe = document.getElementById('universe');
+                const status = document.getElementById('status');
+
+                universe.innerHTML = '';
+
+                if (data.active_writers.length === 0) {
+                    status.innerText = "The universe is quiet...";
+                    const sleep = document.createElement('div');
+                    sleep.className = 'cat';
+                    sleep.style.left = '50%';
+                    sleep.style.top = '50%';
+                    sleep.style.transform = 'translate(-50%, -50%)';
+                    sleep.innerText = '💤';
+                    universe.appendChild(sleep);
+                } else {
+                    status.innerText = `${data.active_writers.length} writer(s) active!`;
+
+                    data.active_writers.forEach((writer, index) => {
+                        const catDiv = document.createElement('div');
+                        const color = getRandomNeon();
+
+                        catDiv.className = 'cat active';
+                        catDiv.style.filter = `drop-shadow(0 0 15px ${color})`;
+
+                        // Spread them out across the bigger box
+                        const xPos = (10 + (index * 25)) % 90;
+                        catDiv.style.left = `${xPos}%`;
+                        catDiv.style.top = '35%';
+
+                        catDiv.innerHTML = `
+                            😺<br>
+                            <div class="writer-name" style="color: ${color}">${writer}</div>
+                        `;
+
+                        universe.appendChild(catDiv);
+                    });
+                }
+            } catch (err) {
+                console.error("Connection lost to the stars...", err);
+            }
+        }
+
+        setInterval(checkStatus, 3000);
+    </script>
+</body>
+</html>
