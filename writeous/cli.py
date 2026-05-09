@@ -103,7 +103,9 @@ def monitor(doc_path, output_folder, interval, goal, colab, name):
         click.echo(click.style("⚠️  Error: Section tracking currently only supports .docx files.", fg='red'))
         return
 
-    click.echo(click.style(f"🕯️  Lantern Lit: Monitoring {filename}", fg='yellow', bold=True))
+    click.echo(click.style(f"🕯Lantern Lit: Monitoring {filename}", fg='yellow', bold=True))
+    if colab:
+        click.echo(click.style(f">>> Colab mode on! Miauw {name} 😺<<<\nView at http://127.0.0.1:5000/universe", fg='yellow', bold=True))
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
